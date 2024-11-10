@@ -10,6 +10,16 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define MAX_CONNECTIONS 5
+
+void handle_connection(int client_fd) {
+    char buffer[1000];
+    int bytes_read = 0;
+    printf("Connection received.\n");
+    bytes_read = read(client_fd, buffer, sizeof(buffer));
+    write(client_fd, buffer, bytes_read);
+}
+
 
 int main(int argc, char *argv[]) {
     int PORT = 8000;        // Random port number
@@ -40,8 +50,8 @@ int main(int argc, char *argv[]) {
     }
 
 
-    int server_fd = socket(AF_LOCAL, SOCK_STREAM, 0);
-    // AF_LOCAL = used for communication between processes on the same machine
+    int server_fd = socket(AF_INET, SOCK_STREAM, 0);
+    // AF_INET = IPv4
     // SOCK_STREAM = TCP
     // 0 = protocol for IP (Internet Protocol)
 
@@ -52,16 +62,22 @@ int main(int argc, char *argv[]) {
     sock_addr.sin_port = htons(PORT);           // htons() = host to network short
     sock_addr.sin_addr.s_addr = INADDR_ANY;     // INADDR_ANY = any IP address
 
-    
+    int returnval = 0;
+
     // Bind socket to port
-    bind(server_fd, (struct sockaddr *) &sock_addr, sizeof(sock_addr));
+        // Requires sending pointer to sockaddr_in struct typecasted to sockaddr
+    returnval = bind(server_fd, (struct sockaddr *) &sock_addr, sizeof(sock_addr));
+    
 
 
-    listen(server_fd, 1); // 1 = number of connections allowed
+    returnval = listen(server_fd, MAX_CONNECTIONS);
 
+
+    struct sockaddr_in client_addr;
+    socklen_t client_addr_len = sizeof(client_addr);
 
     // Await for a connection on a server_fd. When a connection arrives, open a new socket to communicate with it
-    int client_fd = accept(server_fd, NULL, NULL); 
+    int client_fd = accept(server_fd, (struct sockaddr*)&client_addr, &client_addr_len); 
 
     printf("Connection established.\n");
 
@@ -69,22 +85,7 @@ int main(int argc, char *argv[]) {
     // int bytes_read = read(client_fd, buffer, sizeof(buffer));
     int bytes_read = 0;
 
-
-    //Put everything in a big while loop which doesn't end until the client sends a message with the word "exit" in it.
-        // Also include the accept and close statements in it
-
-    while (strcmp(buffer, "exit\n") != 0) {
-        bytes_read = 0;
-
-        do {
-            bytes_read += read(client_fd, buffer, 1);    // Read 1 byte at a time
-        } while(buffer[bytes_read - 1] != '\n');
-        
-        printf("Message received: '%s'\n", buffer);
-        write(client_fd, buffer, bytes_read);
-    }
-
-    close(client_fd);
+    handle_connection(client_fd);
 
     return 0;
 }
