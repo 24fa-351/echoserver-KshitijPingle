@@ -59,7 +59,6 @@ int main(int argc, char *argv[])
     // SOCK_STREAM = TCP
     // 0 = protocol for IP (Internet Protocol)
 
-    // NOTE : Check if this is the correct sock struct to use for bind()
     struct sockaddr_in sock_addr;
     sock_addr.sin_family = AF_INET;         // AF_INET = IPv4
     sock_addr.sin_port = htons(PORT);       // htons() = host to network short
